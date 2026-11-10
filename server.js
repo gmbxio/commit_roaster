@@ -14,7 +14,7 @@ if (typeof process.loadEnvFile === "function") {
 const roast = require("./api/roast.js");
 
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css" };
-const FILES = ["index.html", "app.js", "style.css"];
+const FILES = ["index.html", "app.js", "style.css", "mixpanel.min.js"];
 
 http.createServer((req, res) => {
   if (req.url === "/api/roast") {
