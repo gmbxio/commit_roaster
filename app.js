@@ -3,23 +3,26 @@
 // Replace with your own token from mixpanel.com → Project Settings → Token.
 const MIXPANEL_TOKEN = "d2a6fa9b4e8dedda02290267f18d41f1";
 
-mixpanel.init(MIXPANEL_TOKEN, {
-  persistence: "localStorage",   // keeps distinct_id stable across page loads
-  track_pageview: false,         // we fire page_viewed manually so the name matches our funnel exactly
-  ignore_dnt: false,
-});
-
-// Helper — fire an event and silently swallow errors so analytics never breaks the app
+// Helper — fire an event and silently swallow errors so analytics NEVER breaks the app
 function track(event, props) {
-  try { mixpanel.track(event, props || {}); } catch (_) {}
+  try {
+    if (typeof mixpanel !== "undefined") mixpanel.track(event, props || {});
+  } catch (_) {}
 }
 
-// ─── Funnel step 0 — page_viewed ──────────────────────────────────────────
-// Fires as soon as the script loads (i.e. user opened the app).
-track("page_viewed", {
-  referrer: document.referrer || null,
-  url: location.href,
-});
+// ─── Mixpanel init + Funnel step 0 — page_viewed ──────────────────────────
+// Wrapped in try-catch: if the SDK fails to load for any reason, the app still works.
+try {
+  mixpanel.init(MIXPANEL_TOKEN, {
+    persistence: "localStorage",  // keeps distinct_id stable across page loads
+    track_pageview: false,        // we fire page_viewed manually so the name matches our funnel exactly
+    ignore_dnt: false,
+  });
+  track("page_viewed", {
+    referrer: document.referrer || null,
+    url: location.href,
+  });
+} catch (_) {}
 
 // ─── Timing helpers ────────────────────────────────────────────────────────
 let repoSearchStart   = null;
