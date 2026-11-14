@@ -17,7 +17,7 @@ try {
     persistence: "localStorage",  // keeps distinct_id stable across page loads
     track_pageview: false,        // we fire page_viewed manually so the name matches our funnel exactly
     api_host: "https://api-eu.mixpanel.com",
-    ignore_dnt: false,
+    ignore_dnt: true,
   });
   track("page_viewed", {
     referrer: document.referrer || null,
