@@ -44,6 +44,11 @@ async function loadAccount() {
     const data = await r.json();
     if (!data.user) return;
     signedIn = true;
+    try {
+      mixpanel.identify(data.user.username);
+      mixpanel.people.set({ github_username: data.user.username });
+      track("user_signed_in", { github_username: data.user.username });
+    } catch (_) {}
     $("account-name").textContent = `Signed in as @${data.user.username}`;
     $("login").hidden = true;
     $("logout").hidden = false;
@@ -51,8 +56,9 @@ async function loadAccount() {
 }
 
 $("logout").onclick = async () => {
-  await fetch("/api/auth/logout", { method: "POST" });
-  location.reload();
+  $("logout").textContent = "Signing out...";
+  $("logout").disabled = true;
+  location.href = "/api/auth/logout";
 };
 loadAccount();
 
@@ -190,6 +196,7 @@ async function roast(user, repo, repoMeta) {
         body: JSON.stringify({ repository: `${username}/${repo}`, commits: list, roasts: data.roasts }),
       }).then((response) => {
         if (!response.ok) console.error("Could not save roast history:", response.status);
+        else track("roast_saved", { github_username: username, repo_name: repo });
       }).catch((error) => console.error("Could not save roast history:", error));
     }
 
