@@ -16,6 +16,7 @@ try {
   mixpanel.init(MIXPANEL_TOKEN, {
     persistence: "localStorage",  // keeps distinct_id stable across page loads
     track_pageview: false,        // we fire page_viewed manually so the name matches our funnel exactly
+    api_host: "https://api-eu.mixpanel.com",
     ignore_dnt: false,
   });
   track("page_viewed", {
