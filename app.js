@@ -30,12 +30,31 @@ let roastRequestStart = null;
 
 // ─── DOM helpers ───────────────────────────────────────────────────────────
 const $ = (id) => document.getElementById(id);
+let signedIn = false;
 const el = (tag, text, cls) => {
   const e = document.createElement(tag);
   if (text) e.textContent = text; // textContent only: commit messages are untrusted
   if (cls) e.className = cls;
   return e;
 };
+
+async function loadAccount() {
+  try {
+    const r = await fetch("/api/auth/me");
+    const data = await r.json();
+    if (!data.user) return;
+    signedIn = true;
+    $("account-name").textContent = `Signed in as @${data.user.username}`;
+    $("login").hidden = true;
+    $("logout").hidden = false;
+  } catch (_) {}
+}
+
+$("logout").onclick = async () => {
+  await fetch("/api/auth/logout", { method: "POST" });
+  location.reload();
+};
+loadAccount();
 
 async function gh(path) {
   const r = await fetch("https://api.github.com" + path);
@@ -57,7 +76,8 @@ $("go").onclick = async () => {
   track("username_submitted", { github_username: user });
 
   $("out").replaceChildren();
-  $("repos").textContent = "Loading repos...";
+  $("repos").replaceChildren(el("p", "Scanning their public work...", "empty-state"));
+  $("repo-count").textContent = "";
 
   try {
     const all = await gh(`/users/${encodeURIComponent(user)}/repos?per_page=100&sort=pushed`);
@@ -65,7 +85,7 @@ $("go").onclick = async () => {
     const durationMs = Date.now() - repoSearchStart;
 
     if (!repos.length) {
-      $("repos").textContent = "No original public repos.";
+      $("repos").replaceChildren(el("p", "No original public repos. Nothing to roast... yet.", "empty-state"));
       // Dead-end: user dropped off because they have no original repos
       track("repos_loaded", {
         github_username: user,
@@ -85,6 +105,7 @@ $("go").onclick = async () => {
     });
 
     $("repos").replaceChildren();
+    $("repo-count").textContent = `${repos.length} suspect${repos.length === 1 ? "" : "s"}`;
     for (const repo of repos) {
       const b = el("button", repo.name);
       b.onclick = () => roast(user, repo.name, repo);
@@ -100,7 +121,7 @@ $("go").onclick = async () => {
       outcome: "error",
       error: e.message,
     });
-    $("repos").textContent = e.message;
+    $("repos").replaceChildren(el("p", e.message, "empty-state"));
   }
 };
 $("user").onkeydown = (e) => { if (e.key === "Enter") $("go").click(); };
@@ -117,7 +138,7 @@ async function roast(user, repo, repoMeta) {
     repo_stars: repoMeta?.stargazers_count ?? null,
   });
 
-  $("out").replaceChildren(el("p", "Reading the crime scene..."));
+  $("out").replaceChildren(el("p", "Reading the crime scene...", "empty-state"));
   roastRequestStart = Date.now();
 
   try {
@@ -151,7 +172,7 @@ async function roast(user, repo, repoMeta) {
     });
 
     const bySha = Object.fromEntries(data.roasts.map((x) => [x.sha, x.roast]));
-    $("out").replaceChildren(el("h2", `Roasted by: ${data.persona}`));
+    $("out").replaceChildren(el("h2", `🔥 Verdict delivered by ${data.persona}`));
     for (const c of list) {
       const box = el("div", "", "commit");
       box.append(el("code", `${c.sha}  ${c.message}`), el("p", bySha[c.sha] || "(too boring to roast)"));
@@ -161,6 +182,16 @@ async function roast(user, repo, repoMeta) {
     try {
       localStorage.setItem(key, JSON.stringify([...previous, ...data.roasts.map((x) => x.roast)].slice(-40)));
     } catch {}
+
+    if (signedIn) {
+      fetch("/api/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ repository: `${username}/${repo}`, commits: list, roasts: data.roasts }),
+      }).then((response) => {
+        if (!response.ok) console.error("Could not save roast history:", response.status);
+      }).catch((error) => console.error("Could not save roast history:", error));
+    }
 
   } catch (e) {
     const durationMs = roastRequestStart ? Date.now() - roastRequestStart : null;

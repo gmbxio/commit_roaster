@@ -11,13 +11,33 @@
 </script>
 </head>
 <body>
-<main>
-  <h1>Commit Roaster</h1>
-  <p>Enter a GitHub username, pick a repo, get your commit messages roasted.</p>
-  <input id="user" placeholder="GitHub username" autocomplete="off">
-  <button id="go">Find repos</button>
-  <div id="repos"></div>
-  <div id="out"></div>
+<main class="shell">
+  <header class="hero">
+    <div class="eyebrow"><span class="pulse"></span> Commit court is in session</div>
+    <div class="account"><span id="account-name"></span><a id="login" href="/api/auth/login">Sign in with GitHub</a><button id="logout" hidden>Sign out</button></div>
+    <h1>Commit <span>Roaster</span></h1>
+    <p class="lede">Your commit history has been summoned. Bring a GitHub username and prepare for heat.</p>
+    <div class="hero-stats" aria-label="Roaster features">
+      <span>01 <b>Find the evidence</b></span>
+      <span>02 <b>Pick the suspect</b></span>
+      <span>03 <b>Take the roast</b></span>
+    </div>
+  </header>
+
+  <section class="search-panel" aria-label="Find a GitHub repository">
+    <label for="user">Who are we putting on the grill?</label>
+    <div class="search-row">
+      <div class="input-wrap"><span aria-hidden="true">@</span><input id="user" placeholder="github-username" autocomplete="off"></div>
+      <button id="go"><span>Find their repos</span><b aria-hidden="true">→</b></button>
+    </div>
+    <p class="hint">Public repositories only. No developers were harmed... probably.</p>
+  </section>
+
+  <section class="evidence" aria-live="polite">
+    <div class="section-heading"><span>01 / Evidence locker</span><small id="repo-count"></small></div>
+    <div id="repos" class="repo-grid"><p class="empty-state">Enter a username to expose the commit history.</p></div>
+  </section>
+  <section id="out" class="roast-results" aria-live="polite"></section>
 </main>
 <script src="app.js"></script>
 </body>

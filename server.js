@@ -12,12 +12,21 @@ if (typeof process.loadEnvFile === "function") {
 }
 
 const roast = require("./api/roast.js");
+const apiRoutes = {
+  "/api/roast": roast,
+  "/api/history": require("./api/history.js"),
+  "/api/auth/login": require("./api/auth/login.js"),
+  "/api/auth/callback": require("./api/auth/callback.js"),
+  "/api/auth/me": require("./api/auth/me.js"),
+  "/api/auth/logout": require("./api/auth/logout.js"),
+};
 
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css" };
 const FILES = ["index.html", "app.js", "style.css", "mixpanel.min.js"];
 
 http.createServer((req, res) => {
-  if (req.url === "/api/roast") {
+  const route = new URL(req.url, "http://localhost").pathname;
+  if (apiRoutes[route]) {
     let raw = "";
     req.on("data", (d) => (raw += d));
     req.on("end", () => {
@@ -27,7 +36,10 @@ http.createServer((req, res) => {
         res.setHeader("Content-Type", "application/json");
         res.end(JSON.stringify(obj));
       };
-      roast(req, res);
+      Promise.resolve(apiRoutes[route](req, res)).catch((error) => {
+        console.error("API request failed:", error);
+        if (!res.headersSent) res.status(500).json({ error: "Internal server error" });
+      });
     });
     return;
   }
